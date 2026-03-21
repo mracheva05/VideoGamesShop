@@ -1,0 +1,21 @@
+2026-03-21 15:56:31.434191+02:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO clients VALUES(?,?,?) [42104-240]
+2026-03-21 15:57:32.202696+02:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
+2026-03-21 16:06:01.421022+02:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
+2026-03-21 16:07:45.999467+02:00 jdbc[3]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
+2026-03-21 16:08:18.080587+02:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
+2026-03-21 16:08:38.140165+02:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
+2026-03-21 16:09:01.901025+02:00 jdbc[4]: exception
+org.h2.jdbc.JdbcSQLSyntaxErrorException: Table "CLIENTS" not found (this database is empty); SQL statement:
+INSERT INTO CLIENTS VALUES(?,?,?) [42104-240]
