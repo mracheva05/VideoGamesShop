@@ -2,14 +2,20 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 
+//TODO: Search feature (Why the fuck is it a combo box ????) :)
 public class MainForm {
 
     Connection conn = null;
 
     public MainForm() {
+        
+        loadClientsIntoComboBox();
+        loadGamesIntoComboBox();
+        
         btnAddClient.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -98,6 +104,108 @@ public class MainForm {
                 }
             }
         });
+        btnAddOrder.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if(comboOrderClient.getSelectedItem() == null || comboOrderGame.getSelectedItem() == null){
+                    JOptionPane.showMessageDialog(null, "Please select a client and a game");
+                } else {
+                    String sql = "INSERT INTO ORDERS (clientid, gameid, orderdate) VALUES(?,?,?)";
+                    try {
+                        conn = DatabaseConnection.getConnection();
+
+                        int clientId = getClientIdByName(comboOrderClient.getSelectedItem().toString());
+                        int gameId = getGameIdByTitle(comboOrderGame.getSelectedItem().toString());
+
+                        PreparedStatement prepStatement = conn.prepareStatement(sql);
+                        prepStatement.setInt(1, clientId);
+                        prepStatement.setInt(2, gameId);
+                        prepStatement.setDate(3, new Date(System.currentTimeMillis())); // current date
+                        prepStatement.executeUpdate();
+                        conn.commit();
+
+                        prepStatement.close();
+                        conn.close();
+
+                        JOptionPane.showMessageDialog(null, "Order added successfully");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error" + ex.getMessage());
+                    }
+                }
+            }
+        });
+        //Will be implemented when a field, which identifies order to be deleted, is added in the GUI
+        btnDeleteOrder.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+            }
+        });
+    }
+
+    private int getClientIdByName(String name) throws SQLException {
+        String sql = "SELECT id FROM CLIENTS WHERE name = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            preparedStatement.setString(1, name);
+            java.sql.ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("id");
+            } else {
+                throw new SQLException("Client not found");
+            }
+        }
+    }
+
+    private int getGameIdByTitle(String title) throws SQLException {
+        String sql = "SELECT id FROM GAMES WHERE title = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+            preparedStatement.setString(1, title);
+            java.sql.ResultSet resultSet = preparedStatement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("id");
+            } else {
+                throw new SQLException("Game not found");
+            }
+        }
+    }
+
+    private void loadGamesIntoComboBox() {
+        String sql = "SELECT title FROM GAMES";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement prepStatement = conn.prepareStatement(sql);
+             java.sql.ResultSet resultSet = prepStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String gameName = resultSet.getString("title");
+                comboOrderGame.addItem(gameName);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error loading clients: " + e.getMessage());
+        }
+    }
+
+    private void loadClientsIntoComboBox() {
+        String sql = "SELECT name FROM CLIENTS";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement prepStatement = conn.prepareStatement(sql);
+             java.sql.ResultSet resultSet = prepStatement.executeQuery()) {
+
+            while (resultSet.next()) {
+                String clientName = resultSet.getString("name");
+                comboOrderClient.addItem(clientName);
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null, "Error loading clients: " + e.getMessage());
+        }
     }
 
     private void executeGameQuery(String sql) throws SQLException {
