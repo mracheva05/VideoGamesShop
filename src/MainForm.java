@@ -1,10 +1,7 @@
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 
 //TODO: Search feature (Why the fuck is it a combo box ????) :)
 public class MainForm {
@@ -12,98 +9,16 @@ public class MainForm {
     Connection conn = null;
 
     public MainForm() {
-        
-        loadClientsIntoComboBox();
-        loadGamesIntoComboBox();
-        
-        btnAddClient.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isClientInfoValid()) {
-                    JOptionPane.showMessageDialog(null, "Please fill all fields");
 
-                } else {
-                    String sql = "INSERT INTO CLIENTS (name, phone, country) VALUES(?,?,?)";
+        //comboOrderClient.addItem("Select a client");
 
-                    try {
-                        executeClientQuery(sql);
-                        JOptionPane.showMessageDialog(null, "Client added successfully");
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(null, "Error adding client " + ex.getMessage());
-                    }
-                }
-            }
-        });
-        btnDeleteClient.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        loadComboBoxes();
+        loadTables();
 
-                if (isClientInfoValid()) {
-                    JOptionPane.showMessageDialog(null, "Please fill all fields");
+        clientOperations();
 
-                } else {
-                    String sql = "DELETE FROM CLIENTS WHERE name = ? AND phone = ? AND country = ?";
+        gameOperations();
 
-                    try {
-                        executeClientQuery(sql);
-                        JOptionPane.showMessageDialog(null, "Client removed successfully");
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(null, "Error deleting client " + ex.getMessage());
-                    }
-                }
-
-
-            }
-        });
-        //Will be implemented after a field where update data can be written is implemented into the GUI
-        btnUpdateClient.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-
-            }
-        });
-        btnAddGame.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isGameValid()) {
-                    JOptionPane.showMessageDialog(null, "Please fill all fields");
-
-                } else {
-                    String sql = "INSERT INTO GAMES (title, price, genre) VALUES(?,?,?)";
-
-                    try {
-                        executeGameQuery(sql);
-                        JOptionPane.showMessageDialog(null, "Game added successfully");
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(null, "Error adding game " + ex.getMessage());
-                    }
-                }
-
-
-            }
-        });
-        btnDeleteGame.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (isGameValid()) {
-                    JOptionPane.showMessageDialog(null, "Please fill all fields");
-
-                } else {
-                    String sql = "DELETE FROM GAMES WHERE title = ? AND price = ? AND genre = ?";
-
-                    try {
-                        executeGameQuery(sql);
-                        JOptionPane.showMessageDialog(null, "Game deleted successfully");
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                        JOptionPane.showMessageDialog(null, "Error deleting game " + ex.getMessage());
-                    }
-                }
-            }
-        });
         btnAddOrder.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -122,6 +37,7 @@ public class MainForm {
                         prepStatement.setInt(2, gameId);
                         prepStatement.setDate(3, new Date(System.currentTimeMillis())); // current date
                         prepStatement.executeUpdate();
+                        loadOrdersTable();
                         conn.commit();
 
                         prepStatement.close();
@@ -135,13 +51,268 @@ public class MainForm {
                 }
             }
         });
-        //Will be implemented when a field, which identifies order to be deleted, is added in the GUI
-        btnDeleteOrder.addActionListener(new ActionListener() {
+
+        btnDeleteOrder.addActionListener(e -> {
+            int row = tableOrders.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(null, "Select a row first");
+                return;
+            }
+
+            try (Connection conn = DatabaseConnection.getConnection()) {
+
+                String clientName = tableOrders.getValueAt(row, 0).toString();
+                String gameTitle = tableOrders.getValueAt(row, 1).toString();
+                java.sql.Date orderDate = java.sql.Date.valueOf(tableOrders.getValueAt(row, 2).toString());
+
+                int clientId = getClientIdByName(clientName);
+                int gameId = getGameIdByTitle(gameTitle);
+
+                String sql = "DELETE FROM ORDERS WHERE clientid = ? AND gameid = ? AND orderdate = ?";
+                PreparedStatement preparedStatement = conn.prepareStatement(sql);
+                preparedStatement.setInt(1, clientId);
+                preparedStatement.setInt(2, gameId);
+                preparedStatement.setDate(3, orderDate);
+
+                preparedStatement.executeUpdate();
+                conn.commit();
+
+                loadOrdersTable(); // refresh table
+                preparedStatement.close();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(null, "Error deleting order: " + ex.getMessage());
+            }
+        });
+    }
+
+    private void gameOperations() {
+        btnUpdateGames.addActionListener(e -> {
+            int row = tableGames.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(null, "Select a row first");
+                return;
+            }
+
+            String oldTitle = tableGames.getValueAt(row, 0).toString();
+            String oldPrice = tableGames.getValueAt(row, 1).toString();
+            String oldGenre = tableGames.getValueAt(row, 2).toString();
+
+            String sql = "UPDATE GAMES SET title=?, price=?, genre=? WHERE title=? AND price=? AND genre=?";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+
+                preparedStatement.setString(1, textGameTitle.getText());
+                preparedStatement.setString(2, txtGamePrice.getText());
+                preparedStatement.setString(3, txtGameGenre.getText());
+
+                preparedStatement.setString(4, oldTitle);
+                preparedStatement.setString(5, oldPrice);
+                preparedStatement.setString(6, oldGenre);
+
+                preparedStatement.executeUpdate();
+                conn.commit();
+                JOptionPane.showMessageDialog(null, "Game updated successfully");
+
+                loadGamesTable(); // refresh table
+                loadGamesIntoComboBox();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        btnAddGame.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (isGameValid()) {
+                    JOptionPane.showMessageDialog(null, "Please fill all fields");
+
+                } else {
+                    String sql = "INSERT INTO GAMES (title, price, genre) VALUES(?,?,?)";
+
+                    try {
+                        executeGameQuery(sql);
+                        loadGamesTable();
+                        loadGamesIntoComboBox();
+                        JOptionPane.showMessageDialog(null, "Game added successfully");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error adding game " + ex.getMessage());
+                    }
+                }
+
 
             }
         });
+
+        btnDeleteGame.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isGameValid()) {
+                    JOptionPane.showMessageDialog(null, "Please fill all fields");
+
+                } else {
+                    String sql = "DELETE FROM GAMES WHERE title = ? AND price = ? AND genre = ?";
+
+                    try {
+                        executeGameQuery(sql);
+                        loadGamesTable();
+                        loadGamesIntoComboBox();
+                        JOptionPane.showMessageDialog(null, "Game deleted successfully");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error deleting game " + ex.getMessage());
+                    }
+                }
+            }
+        });
+    }
+
+    private void clientOperations() {
+        btnAddClient.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isClientInfoValid()) {
+                    JOptionPane.showMessageDialog(null, "Please fill all fields");
+
+                } else {
+                    String sql = "INSERT INTO CLIENTS (name, phone, country) VALUES(?,?,?)";
+
+                    try {
+                        executeClientQuery(sql);
+                        loadClientsTable();
+                        loadClientsIntoComboBox();
+
+                        JOptionPane.showMessageDialog(null, "Client added successfully");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error adding client " + ex.getMessage());
+                    }
+                }
+            }
+        });
+
+        btnDeleteClient.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                if (isClientInfoValid()) {
+                    JOptionPane.showMessageDialog(null, "Please fill all fields");
+
+                } else {
+                    String sql = "DELETE FROM CLIENTS WHERE name = ? AND phone = ? AND country = ?";
+
+                    try {
+                        executeClientQuery(sql);
+                        loadClientsTable();
+                        loadClientsIntoComboBox();
+
+                        JOptionPane.showMessageDialog(null, "Client removed successfully");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                        JOptionPane.showMessageDialog(null, "Error deleting client " + ex.getMessage());
+                    }
+                }
+
+
+            }
+        });
+
+        btnUpdateClient.addActionListener(e -> {
+            int row = tableClients.getSelectedRow();
+            if (row == -1) {
+                JOptionPane.showMessageDialog(null, "Select a row first");
+                return;
+            }
+
+            String oldName = tableClients.getValueAt(row, 0).toString();
+            String oldPhone = tableClients.getValueAt(row, 1).toString();
+            String oldCountry = tableClients.getValueAt(row, 2).toString();
+
+            String sql = "UPDATE CLIENTS SET name=?, phone=?, country=? WHERE name=? AND phone=? AND country=?";
+
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+
+                preparedStatement.setString(1, textClientName.getText());
+                preparedStatement.setString(2, textClientPhone.getText());
+                preparedStatement.setString(3, textClientCountry.getText());
+
+                preparedStatement.setString(4, oldName);
+                preparedStatement.setString(5, oldPhone);
+                preparedStatement.setString(6, oldCountry);
+
+                preparedStatement.executeUpdate();
+                conn.commit();
+                JOptionPane.showMessageDialog(null, "Client updated successfully");
+
+
+                loadClientsTable(); // refresh table
+                loadClientsIntoComboBox();
+
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+    }
+
+    private void loadComboBoxes() {
+        loadClientsIntoComboBox();
+        loadGamesIntoComboBox();
+    }
+
+    private void loadTables() {
+        loadClientsTable();
+        loadGamesTable();
+        loadOrdersTable();
+    }
+
+    private void loadClientsTable() {
+        String sql = "SELECT name,phone,country FROM CLIENTS";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            TableModel model = new TableModel(resultSet);
+            tableClients.setModel(model);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadGamesTable() {
+        String sql = "SELECT title, price, genre FROM GAMES";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            TableModel model = new TableModel(resultSet);
+            tableGames.setModel(model);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void loadOrdersTable() {
+        //String sql = "SELECT o.clientid, c.name, o.gameid, g.title, o.orderdate FROM ORDERS o JOIN CLIENTS c ON o.clientid = c.id JOIN GAMES g ON o.gameid = g.id";
+        String sql = "SELECT c.name AS client_name, g.title AS game_title, o.orderdate FROM ORDERS o JOIN CLIENTS c ON o.clientid = c.id JOIN GAMES g ON o.gameid = g.id";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = conn.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
+
+            TableModel model = new TableModel(resultSet);
+            tableOrders.setModel(model);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     private int getClientIdByName(String name) throws SQLException {
@@ -174,6 +345,9 @@ public class MainForm {
 
     private void loadGamesIntoComboBox() {
         String sql = "SELECT title FROM GAMES";
+        comboOrderGame.removeAllItems();
+        comboOrderGame.addItem("Select a game");
+
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement prepStatement = conn.prepareStatement(sql);
@@ -192,6 +366,8 @@ public class MainForm {
 
     private void loadClientsIntoComboBox() {
         String sql = "SELECT name FROM CLIENTS";
+        comboOrderClient.removeAllItems();
+        comboOrderClient.addItem("Select a client");
 
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement prepStatement = conn.prepareStatement(sql);
