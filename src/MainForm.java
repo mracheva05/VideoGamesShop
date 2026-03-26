@@ -448,8 +448,6 @@ public class MainForm {
     private JButton btnAddGame;
     private JButton btnDeleteGame;
     private JTextField textClientCountry;
-    private JComboBox comboSearchClient;
-    private JComboBox comboSearchGame;
     private JButton btnSearch;
     private JTable tableSearch;
     private JTable tableOrders;
@@ -459,4 +457,12 @@ public class MainForm {
     private JButton btnAddOrder;
     private JButton btnUpdateClient;
     private JButton btnUpdateGames;
+    private JTextField textClientSearch;
+    private JTextField textGamesSearch;
+    private JTextField textClientAdvancedSearch;
+    private JTextField textGameAdvancedSearch;
+
+    private void createUIComponents() {
+        // TODO: place custom component creation code here
+    }
 }
