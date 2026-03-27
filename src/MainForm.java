@@ -5,7 +5,7 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
-//TODO: Search feature (Why the fuck is it a combo box ????) :)
+
 public class MainForm {
 
     Connection conn = null;
@@ -51,7 +51,6 @@ public class MainForm {
                 try (Connection conn = DatabaseConnection.getConnection();
                      PreparedStatement ps = conn.prepareStatement(sql.toString())) {
 
-                    // set parameters
                     for (int i = 0; i < params.size(); i++) {
                         ps.setString(i + 1, params.get(i));
                     }
@@ -534,7 +533,7 @@ public class MainForm {
     private void executeClientQuery(String sql) throws SQLException {
         conn = DatabaseConnection.getConnection();
 
-        System.out.println("EIRWBIGPGHR "+conn .getMetaData().getURL());
+        //System.out.println("EIRWBIGPGHR "+conn .getMetaData().getURL());
         PreparedStatement prepStatement = conn.prepareStatement(sql);
         prepStatement.setString(1,textClientName.getText());
         prepStatement.setString(2,textClientPhone.getText());
