@@ -85,6 +85,7 @@ public class MainForm {
                 JOptionPane.showMessageDialog(null, "Error deleting order: " + ex.getMessage());
             }
         });
+
     }
 
     private void gameOperations() {
@@ -167,6 +168,41 @@ public class MainForm {
                         JOptionPane.showMessageDialog(null, "Error deleting game " + ex.getMessage());
                     }
                 }
+            }
+        });
+
+        btnSearchGames.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                String input = textGamesSearch.getText().trim();
+                String sql = "SELECT title, price, genre FROM GAMES " +
+                        "WHERE title LIKE ? OR price LIKE ? OR genre LIKE ?";
+
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+
+                    String searchValue = "%" + input + "%";
+
+                    preparedStatement.setString(1, searchValue);
+                    preparedStatement.setString(2, searchValue);
+                    preparedStatement.setString(3, searchValue);
+
+                    ResultSet resultSet = preparedStatement.executeQuery();
+
+                    TableModel model = new TableModel(resultSet);
+                    tableGames.setModel(model);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        btnRefreshGamesTable.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                loadGamesTable();
             }
         });
     }
@@ -255,6 +291,41 @@ public class MainForm {
 
             } catch (SQLException ex) {
                 ex.printStackTrace();
+            }
+        });
+
+        btnSearchClients.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                String input = textClientSearch.getText().trim();
+                String sql = "SELECT name, phone, country FROM CLIENTS " +
+                        "WHERE name LIKE ? OR phone LIKE ? OR country LIKE ?";
+
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
+
+                    String searchValue = "%" + input + "%";
+
+                    preparedStatement.setString(1, searchValue);
+                    preparedStatement.setString(2, searchValue);
+                    preparedStatement.setString(3, searchValue);
+
+                    ResultSet resultSet = preparedStatement.executeQuery();
+
+                    TableModel model = new TableModel(resultSet);
+                    tableClients.setModel(model);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+
+        btnRefreshClientTable.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                loadClientsTable();
             }
         });
     }
@@ -461,6 +532,10 @@ public class MainForm {
     private JTextField textGamesSearch;
     private JTextField textClientAdvancedSearch;
     private JTextField textGameAdvancedSearch;
+    private JButton btnSearchClients;
+    private JButton btnSearchGames;
+    private JButton btnRefreshClientTable;
+    private JButton btnRefreshGamesTable;
 
     private void createUIComponents() {
         // TODO: place custom component creation code here
