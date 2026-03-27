@@ -2,6 +2,8 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 //TODO: Search feature (Why the fuck is it a combo box ????) :)
 public class MainForm {
@@ -10,15 +12,63 @@ public class MainForm {
 
     public MainForm() {
 
-        //comboOrderClient.addItem("Select a client");
-
         loadComboBoxes();
         loadTables();
-
         clientOperations();
-
         gameOperations();
+        orderOperations();
 
+        btnSearch.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+                String clientInput = textClientAdvancedSearch.getText().trim();
+                String gameInput = textGameAdvancedSearch.getText().trim();
+
+                StringBuilder sql = new StringBuilder(
+                        "SELECT c.name, c.phone, c.country, g.title AS game, g.genre, g.price FROM ORDERS o JOIN CLIENTS c ON o.clientid = c.id JOIN GAMES g ON o.gameid = g.id WHERE 1=1"
+                );
+
+                List<String> params = new ArrayList<>();
+
+                if (!clientInput.isEmpty()) {
+                    sql.append(" AND (c.name LIKE ? OR c.phone LIKE ? OR c.country LIKE ?)");
+                    String value = "%" + clientInput + "%";
+                    params.add(value);
+                    params.add(value);
+                    params.add(value);
+                }
+
+                // GAME conditions
+                if (!gameInput.isEmpty()) {
+                    sql.append(" AND (g.title LIKE ? OR g.genre LIKE ? OR CAST(g.price AS CHAR) LIKE ?)");
+                    String value = "%" + gameInput + "%";
+                    params.add(value);
+                    params.add(value);
+                    params.add(value);
+                }
+
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+
+                    // set parameters
+                    for (int i = 0; i < params.size(); i++) {
+                        ps.setString(i + 1, params.get(i));
+                    }
+
+                    ResultSet rs = ps.executeQuery();
+
+                    TableModel model = new TableModel(rs);
+                    tableSearch.setModel(model);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        });
+    }
+
+    private void orderOperations() {
         btnAddOrder.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -63,7 +113,7 @@ public class MainForm {
 
                 String clientName = tableOrders.getValueAt(row, 0).toString();
                 String gameTitle = tableOrders.getValueAt(row, 1).toString();
-                java.sql.Date orderDate = java.sql.Date.valueOf(tableOrders.getValueAt(row, 2).toString());
+                Date orderDate = Date.valueOf(tableOrders.getValueAt(row, 2).toString());
 
                 int clientId = getClientIdByName(clientName);
                 int gameId = getGameIdByTitle(gameTitle);
@@ -85,7 +135,6 @@ public class MainForm {
                 JOptionPane.showMessageDialog(null, "Error deleting order: " + ex.getMessage());
             }
         });
-
     }
 
     private void gameOperations() {
@@ -538,6 +587,6 @@ public class MainForm {
     private JButton btnRefreshGamesTable;
 
     private void createUIComponents() {
-        // TODO: place custom component creation code here
+
     }
 }
